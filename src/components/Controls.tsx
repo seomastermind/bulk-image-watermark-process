@@ -50,7 +50,7 @@ export function Controls({
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Content Type</label>
+            <label className="block text-sm font-medium text-gray-700">Watermark Type</label>
             <Select.Root value={contentType} onValueChange={onContentTypeChange}>
               <Select.Trigger
                 className="mt-1 flex w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"

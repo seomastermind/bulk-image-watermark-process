@@ -1,9 +1,13 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Download, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { clsx } from 'clsx';
 import JSZip from 'jszip';
 import { ImageUploader } from './components/ImageUploader';
 import { ImagePreview } from './components/ImagePreview';
 import { Controls } from './components/Controls';
+import { LivePreview } from './components/LivePreview';
+import { ThemeToggle } from './components/ThemeToggle';
+import { PreviewNameInput } from './components/PreviewNameInput';
 import { processImages } from './utils/imageProcessor';
 import { Position, ImageFile, ProcessedImage, ContentType, TextOptions } from './types';
 
@@ -25,6 +29,30 @@ function App() {
   const [textOptions, setTextOptions] = useState<TextOptions>(defaultTextOptions);
   const [processing, setProcessing] = useState(false);
   const [processedImages, setProcessedImages] = useState<ProcessedImage[]>([]);
+  const [isDark, setIsDark] = useState(false);
+  const [previewName, setPreviewName] = useState('');
+  const [previewImage, setPreviewImage] = useState<HTMLImageElement | null>(null);
+  const [overlayPreviewImage, setOverlayPreviewImage] = useState<HTMLImageElement | null>(null);
+
+  useEffect(() => {
+    if (images[0]) {
+      const img = new Image();
+      img.onload = () => setPreviewImage(img);
+      img.src = images[0].preview;
+    } else {
+      setPreviewImage(null);
+    }
+  }, [images]);
+
+  useEffect(() => {
+    if (overlay) {
+      const img = new Image();
+      img.onload = () => setOverlayPreviewImage(img);
+      img.src = overlay.preview;
+    } else {
+      setOverlayPreviewImage(null);
+    }
+  }, [overlay]);
 
   const handleImageUpload = useCallback((files: ImageFile[]) => {
     setImages((prev) => [...prev, ...files]);
@@ -48,6 +76,7 @@ function App() {
     setContentType('text');
     setTextOptions(defaultTextOptions);
     setProcessedImages([]);
+    setPreviewName('');
   }, []);
 
   const handleProcess = async () => {
@@ -94,16 +123,16 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-8">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900">Image Processor</h1>
-          <p className="mt-2 text-lg text-gray-600">
-            Add watermarks, logos, or text to your images in bulk
-          </p>
+    <div className={clsx('min-h-screen transition-colors', isDark ? 'bg-gray-900' : 'bg-gray-50')}>
+      <div className="mx-auto max-w-7xl space-y-8 px-4 py-8">
+        <div className="flex items-center justify-between">
+          <h1 className={clsx('text-2xl font-bold', isDark ? 'text-white' : 'text-gray-900')}>
+            Add Your Watermark - Nafis Iqbal
+          </h1>
+          <ThemeToggle isDark={isDark} onToggle={setIsDark} />
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[1fr,2fr]">
+        <div className="grid gap-8 lg:grid-cols-[1fr,1fr]">
           <div className="space-y-6">
             <Controls
               position={position}
@@ -118,25 +147,29 @@ function App() {
               onTextOptionsChange={setTextOptions}
               onReset={handleReset}
               disabled={images.length === 0}
+              isDark={isDark}
             />
-          </div>
 
-          <div className="space-y-6">
-            <div className="rounded-lg bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-xl font-semibold">Upload Images</h2>
+            <div className={clsx('rounded-lg p-6 shadow-sm', isDark ? 'bg-gray-800' : 'bg-white')}>
+              <h2 className={clsx('mb-4 text-xl font-semibold', isDark ? 'text-white' : 'text-gray-900')}>
+                Upload Images
+              </h2>
               <ImageUploader
                 onUpload={handleImageUpload}
                 accept={{
                   'image/*': ['.png', '.jpg', '.jpeg'],
                 }}
                 compact
+                isDark={isDark}
               />
               <ImagePreview images={images} onRemove={handleRemoveImage} />
             </div>
 
             {contentType === 'image' && (
-              <div className="rounded-lg bg-white p-6 shadow-sm">
-                <h2 className="mb-4 text-xl font-semibold">Upload Overlay</h2>
+              <div className={clsx('rounded-lg p-6 shadow-sm', isDark ? 'bg-gray-800' : 'bg-white')}>
+                <h2 className={clsx('mb-4 text-xl font-semibold', isDark ? 'text-white' : 'text-gray-900')}>
+                  Upload Watermark Image
+                </h2>
                 <ImageUploader
                   onUpload={handleOverlayUpload}
                   multiple={false}
@@ -144,6 +177,7 @@ function App() {
                     'image/*': ['.png'],
                   }}
                   compact
+                  isDark={isDark}
                 />
                 {overlay && (
                   <div className="mt-4">
@@ -156,6 +190,27 @@ function App() {
                 )}
               </div>
             )}
+          </div>
+
+          <div className="space-y-6">
+            <div className={clsx('rounded-lg p-6 shadow-sm border', isDark ? 'bg-gray-800' : 'bg-white')}>
+              <div className="mb-4 space-y-4">
+                <h2 className={clsx('text-xl font-semibold', isDark ? 'text-white' : 'text-gray-900')}>
+                  Live Preview
+                </h2>
+                {/* <PreviewNameInput value={previewName} onChange={setPreviewName} /> */}
+              </div>
+              <LivePreview
+                mainImage={previewImage}
+                overlayImage={overlayPreviewImage}
+                position={position}
+                opacity={opacity}
+                scale={scale}
+                contentType={contentType}
+                textOptions={textOptions}
+                previewName={previewName}
+              />
+            </div>
 
             <div className="flex gap-4">
               <button
@@ -166,7 +221,15 @@ function App() {
                   (contentType === 'text' && !textOptions.text) ||
                   processing
                 }
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:bg-gray-400"
+                className={clsx(
+                  'flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-white transition-colors',
+                  processing
+                    ? 'bg-gray-400'
+                    : isDark
+                    ? 'bg-blue-500 hover:bg-blue-600'
+                    : 'bg-blue-600 hover:bg-blue-700',
+                  'disabled:bg-gray-400'
+                )}
               >
                 {processing ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -179,7 +242,12 @@ function App() {
               {processedImages.length > 0 && !processing && (
                 <button
                   onClick={handleDownload}
-                  className="flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-white transition-colors hover:bg-green-700"
+                  className={clsx(
+                    'flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-white transition-colors',
+                    isDark
+                      ? 'bg-green-500 hover:bg-green-600'
+                      : 'bg-green-600 hover:bg-green-700'
+                  )}
                 >
                   <Download className="h-5 w-5" />
                   Download All
@@ -188,8 +256,10 @@ function App() {
             </div>
 
             {processedImages.length > 0 && !processing && (
-              <div className="rounded-lg bg-white p-6 shadow-sm">
-                <h2 className="mb-4 text-xl font-semibold">Processed Images</h2>
+              <div className={clsx('rounded-lg p-6 shadow-sm', isDark ? 'bg-gray-800' : 'bg-white')}>
+                <h2 className={clsx('mb-4 text-xl font-semibold', isDark ? 'text-white' : 'text-gray-900')}>
+                  Processed Images
+                </h2>
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                   {processedImages.map((image, index) => (
                     <img
@@ -203,6 +273,7 @@ function App() {
               </div>
             )}
           </div>
+          
         </div>
       </div>
     </div>
