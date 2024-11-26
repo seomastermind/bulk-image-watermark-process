@@ -1,16 +1,15 @@
-import { Position, ProcessedImage } from '../types';
+import { Position, ProcessedImage, OverlayOptions, TextOptions } from '../types';
 
 export async function processImages(
   images: File[],
-  overlay: File,
-  position: Position,
-  opacity: number
+  overlay: File | null,
+  options: OverlayOptions
 ): Promise<ProcessedImage[]> {
-  const overlayImage = await createImage(overlay);
+  const overlayImage = overlay ? await createImage(overlay) : null;
   const processedImages: ProcessedImage[] = [];
 
   for (const image of images) {
-    const processed = await processImage(image, overlayImage, position, opacity);
+    const processed = await processImage(image, overlayImage, options);
     processedImages.push(processed);
   }
 
@@ -19,9 +18,8 @@ export async function processImages(
 
 async function processImage(
   image: File,
-  overlay: HTMLImageElement,
-  position: Position,
-  opacity: number
+  overlay: HTMLImageElement | null,
+  options: OverlayOptions
 ): Promise<ProcessedImage> {
   const img = await createImage(image);
   const canvas = document.createElement('canvas');
@@ -33,21 +31,68 @@ async function processImage(
   // Draw main image
   ctx.drawImage(img, 0, 0);
 
-  // Calculate overlay dimensions (20% of the main image width)
-  const overlayWidth = img.width * 0.2;
-  const overlayHeight = (overlay.height * overlayWidth) / overlay.width;
+  if (options.type === 'image' && overlay) {
+    // Calculate overlay dimensions
+    const overlayWidth = img.width * options.scale;
+    const overlayHeight = (overlay.height * overlayWidth) / overlay.width;
 
-  // Calculate position
-  const coords = getOverlayPosition(position, img.width, img.height, overlayWidth, overlayHeight);
+    // Calculate position
+    const coords = getOverlayPosition(
+      options.position,
+      img.width,
+      img.height,
+      overlayWidth,
+      overlayHeight
+    );
 
-  // Set opacity
-  ctx.globalAlpha = opacity;
+    // Set opacity
+    ctx.globalAlpha = options.opacity;
 
-  // Draw overlay
-  ctx.drawImage(overlay, coords.x, coords.y, overlayWidth, overlayHeight);
+    // Draw overlay
+    ctx.drawImage(overlay, coords.x, coords.y, overlayWidth, overlayHeight);
 
-  // Reset opacity
-  ctx.globalAlpha = 1;
+    // Reset opacity
+    ctx.globalAlpha = 1;
+  } else if (options.type === 'text' && options.textOptions) {
+    const { text, fontSize, color, isBold, isItalic } = options.textOptions;
+
+    // Set text properties
+    ctx.globalAlpha = options.opacity;
+    ctx.fillStyle = color;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    // Set font style
+    const fontStyle = [
+      isItalic ? 'italic' : '',
+      isBold ? 'bold' : '',
+      `${fontSize}px`,
+      'Arial, sans-serif',
+    ]
+      .filter(Boolean)
+      .join(' ');
+    ctx.font = fontStyle;
+
+    // Calculate text dimensions
+    const metrics = ctx.measureText(text);
+    const textWidth = metrics.width;
+    const textHeight = fontSize;
+
+    // Calculate position
+    const coords = getOverlayPosition(
+      options.position,
+      img.width,
+      img.height,
+      textWidth,
+      textHeight
+    );
+
+    // Draw text
+    ctx.fillText(text, coords.x, coords.y);
+
+    // Reset opacity
+    ctx.globalAlpha = 1;
+  }
 
   return {
     url: canvas.toDataURL('image/png'),

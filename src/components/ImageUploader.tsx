@@ -2,15 +2,23 @@ import React from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload } from 'lucide-react';
 import { ImageFile } from '../types';
+import { clsx } from 'clsx';
 
 interface Props {
   onUpload: (files: ImageFile[]) => void;
   multiple?: boolean;
   accept?: Record<string, string[]>;
   className?: string;
+  compact?: boolean;
 }
 
-export function ImageUploader({ onUpload, multiple = true, accept, className = '' }: Props) {
+export function ImageUploader({
+  onUpload,
+  multiple = true,
+  accept,
+  className = '',
+  compact = false,
+}: Props) {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept,
     multiple,
@@ -27,13 +35,16 @@ export function ImageUploader({ onUpload, multiple = true, accept, className = '
   return (
     <div
       {...getRootProps()}
-      className={`relative cursor-pointer rounded-lg border-2 border-dashed border-gray-300 p-12 text-center transition-colors hover:border-gray-400 ${
-        isDragActive ? 'border-blue-500 bg-blue-50' : ''
-      } ${className}`}
+      className={clsx(
+        'relative cursor-pointer rounded-lg border-2 border-dashed border-gray-300 text-center transition-colors hover:border-gray-400',
+        isDragActive ? 'border-blue-500 bg-blue-50' : '',
+        compact ? 'p-6' : 'p-12',
+        className
+      )}
     >
       <input {...getInputProps()} />
-      <Upload className="mx-auto h-12 w-12 text-gray-400" />
-      <p className="mt-2 text-sm text-gray-600">
+      <Upload className={clsx('mx-auto text-gray-400', compact ? 'h-8 w-8' : 'h-12 w-12')} />
+      <p className={clsx('text-sm text-gray-600', compact ? 'mt-1' : 'mt-2')}>
         {isDragActive ? (
           'Drop the files here...'
         ) : (

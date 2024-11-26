@@ -5,13 +5,24 @@ import { ImageUploader } from './components/ImageUploader';
 import { ImagePreview } from './components/ImagePreview';
 import { Controls } from './components/Controls';
 import { processImages } from './utils/imageProcessor';
-import { Position, ImageFile, ProcessedImage } from './types';
+import { Position, ImageFile, ProcessedImage, ContentType, TextOptions } from './types';
+
+const defaultTextOptions: TextOptions = {
+  text: '',
+  fontSize: 24,
+  color: '#000000',
+  isBold: false,
+  isItalic: false,
+};
 
 function App() {
   const [images, setImages] = useState<ImageFile[]>([]);
   const [overlay, setOverlay] = useState<ImageFile | null>(null);
   const [position, setPosition] = useState<Position>('bottom-right');
   const [opacity, setOpacity] = useState(0.8);
+  const [scale, setScale] = useState(0.2);
+  const [contentType, setContentType] = useState<ContentType>('text');
+  const [textOptions, setTextOptions] = useState<TextOptions>(defaultTextOptions);
   const [processing, setProcessing] = useState(false);
   const [processedImages, setProcessedImages] = useState<ProcessedImage[]>([]);
 
@@ -25,14 +36,36 @@ function App() {
 
   const handleRemoveImage = useCallback((index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
+    setProcessedImages([]);
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setImages([]);
+    setOverlay(null);
+    setPosition('bottom-right');
+    setOpacity(0.8);
+    setScale(0.2);
+    setContentType('text');
+    setTextOptions(defaultTextOptions);
+    setProcessedImages([]);
   }, []);
 
   const handleProcess = async () => {
-    if (!overlay || images.length === 0) return;
+    if (images.length === 0 || (contentType === 'image' && !overlay) || (contentType === 'text' && !textOptions.text)) {
+      return;
+    }
 
     setProcessing(true);
     try {
-      const processed = await processImages(images, overlay, position, opacity);
+      const options = {
+        type: contentType,
+        position,
+        opacity,
+        scale,
+        textOptions: contentType === 'text' ? textOptions : undefined,
+      };
+
+      const processed = await processImages(images, overlay, options);
       setProcessedImages(processed);
     } catch (error) {
       console.error('Error processing images:', error);
@@ -62,15 +95,32 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8">
-      <div className="mx-auto max-w-6xl space-y-8">
+      <div className="mx-auto max-w-7xl space-y-8">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900">Image Processor</h1>
           <p className="mt-2 text-lg text-gray-600">
-            Add watermarks and overlays to your images in bulk
+            Add watermarks, logos, or text to your images in bulk
           </p>
         </div>
 
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-8 lg:grid-cols-[1fr,2fr]">
+          <div className="space-y-6">
+            <Controls
+              position={position}
+              opacity={opacity}
+              scale={scale}
+              contentType={contentType}
+              textOptions={textOptions}
+              onPositionChange={setPosition}
+              onOpacityChange={setOpacity}
+              onScaleChange={setScale}
+              onContentTypeChange={setContentType}
+              onTextOptionsChange={setTextOptions}
+              onReset={handleReset}
+              disabled={images.length === 0}
+            />
+          </div>
+
           <div className="space-y-6">
             <div className="rounded-lg bg-white p-6 shadow-sm">
               <h2 className="mb-4 text-xl font-semibold">Upload Images</h2>
@@ -79,47 +129,43 @@ function App() {
                 accept={{
                   'image/*': ['.png', '.jpg', '.jpeg'],
                 }}
+                compact
               />
               <ImagePreview images={images} onRemove={handleRemoveImage} />
             </div>
 
-            <div className="rounded-lg bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-xl font-semibold">Upload Overlay</h2>
-              <ImageUploader
-                onUpload={handleOverlayUpload}
-                multiple={false}
-                accept={{
-                  'image/*': ['.png'],
-                }}
-              />
-              {overlay && (
-                <div className="mt-4">
-                  <img
-                    src={overlay.preview}
-                    alt="Overlay preview"
-                    className="mx-auto h-32 object-contain"
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="rounded-lg bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-xl font-semibold">Settings</h2>
-              <Controls
-                position={position}
-                opacity={opacity}
-                onPositionChange={setPosition}
-                onOpacityChange={setOpacity}
-                disabled={!overlay || images.length === 0}
-              />
-            </div>
+            {contentType === 'image' && (
+              <div className="rounded-lg bg-white p-6 shadow-sm">
+                <h2 className="mb-4 text-xl font-semibold">Upload Overlay</h2>
+                <ImageUploader
+                  onUpload={handleOverlayUpload}
+                  multiple={false}
+                  accept={{
+                    'image/*': ['.png'],
+                  }}
+                  compact
+                />
+                {overlay && (
+                  <div className="mt-4">
+                    <img
+                      src={overlay.preview}
+                      alt="Overlay preview"
+                      className="mx-auto h-32 object-contain"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex gap-4">
               <button
                 onClick={handleProcess}
-                disabled={!overlay || images.length === 0 || processing}
+                disabled={
+                  images.length === 0 ||
+                  (contentType === 'image' && !overlay) ||
+                  (contentType === 'text' && !textOptions.text) ||
+                  processing
+                }
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:bg-gray-400"
               >
                 {processing ? (
@@ -144,7 +190,7 @@ function App() {
             {processedImages.length > 0 && !processing && (
               <div className="rounded-lg bg-white p-6 shadow-sm">
                 <h2 className="mb-4 text-xl font-semibold">Processed Images</h2>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
                   {processedImages.map((image, index) => (
                     <img
                       key={index}
