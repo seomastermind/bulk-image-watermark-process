@@ -15,7 +15,8 @@ A user-friendly image watermark application that allows you to add text or image
 - **User-Friendly UI**: Compact design with easy-to-use controls.  
 
 ---
-
+Test Now: https://bulk-image-watermark-process.vercel.app/
+---
 ## Installation  
 
 1. Clone this repository:  
@@ -48,11 +49,11 @@ A user-friendly image watermark application that allows you to add text or image
 ## Usage  
 
 1. Upload an image by dragging and dropping it into the upload area.  
-2. Select the content type (text or image) for the watermark.  
+2. Select the watermark's content type (text or image).  
 3. Customize:  
    - For text: Adjust font size, color, and styles.  
    - For images: Resize and position the watermark image.  
-4. Use the **live preview** panel to see changes in real-time.  
+4. Use the **live preview** panel to see changes in real time.  
 5. Click "Export" to save the final image.  
 6. Use the **Reset** button to clear all changes and start again.  
 
@@ -62,6 +63,7 @@ A user-friendly image watermark application that allows you to add text or image
 
 ![image](https://github.com/user-attachments/assets/34201d26-35b6-4550-bb8c-945ec4a31e1f)
 ![image](https://github.com/user-attachments/assets/6c53a055-d346-4a00-9745-e9b8cef9cfbe)
+![image](https://github.com/user-attachments/assets/fde76457-9dfa-4063-a5ef-ce7b1697a338)
 
 
 ---
@@ -94,8 +96,8 @@ This project is licensed under the MIT License.
 ## Contact  
 
 For questions, suggestions, or issues, please contact:  
-- **Your Name**  
+- **Nafis Iqbal**  
 - **Email**: nafisiqbal166@gmail.com 
-- **GitHub**: [yourusername](https://github.com/seomastermind)  
+- **GitHub**: [seomastermind](https://github.com/seomastermind)  
 
 --- 
